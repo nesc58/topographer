@@ -66,7 +66,7 @@ func (m *maxmindLiteProvider) Download(ctx context.Context, rootDir string) erro
 			actualChecksum)
 	}
 
-	if err := m.extractArchive(rootDir); err != nil {
+	if err := m.extractArchive(ctx, rootDir); err != nil {
 		return fmt.Errorf("cannot extract archive: %w", err)
 	}
 
@@ -74,7 +74,9 @@ func (m *maxmindLiteProvider) Download(ctx context.Context, rootDir string) erro
 }
 
 func (m *maxmindLiteProvider) downloadChecksum(ctx context.Context) (checksum string, retErr error) {
-	req, _ := http.NewRequestWithContext(ctx, "GET", m.buildURL("tar.gz.sha256"), nil)
+	downloadURL := m.buildURL("tar.gz.sha256")
+	logDownloadSource(ctx, downloadURL, "checksum")
+	req, _ := http.NewRequestWithContext(ctx, "GET", downloadURL, nil)
 
 	resp, err := m.httpClient.Do(req)
 	if err != nil {
@@ -111,7 +113,9 @@ func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir strin
 		retErr = errors.Join(retErr, tarFile.Close())
 	}()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", m.buildURL("tar.gz"), nil)
+	downloadURL := m.buildURL("tar.gz")
+	logDownloadSource(ctx, downloadURL, "database archive")
+	req, _ := http.NewRequestWithContext(ctx, "GET", downloadURL, nil)
 
 	resp, err := m.httpClient.Do(req)
 	if err != nil {
@@ -153,7 +157,7 @@ func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir strin
 	return checksum, nil
 }
 
-func (m *maxmindLiteProvider) extractArchive(rootDir string) (retErr error) {
+func (m *maxmindLiteProvider) extractArchive(ctx context.Context, rootDir string) (retErr error) {
 	archiveFile, err := os.Open(filepath.Join(rootDir, maxmindLiteArchiveName))
 	if err != nil {
 		return fmt.Errorf("cannot open archive: %w", err)
@@ -196,6 +200,7 @@ func (m *maxmindLiteProvider) extractArchive(rootDir string) (retErr error) {
 		case header.Linkname != "", header.FileInfo().IsDir():
 			continue
 		case strings.ToUpper(filepath.Ext(header.Name)) == ".MMDB":
+			logExtraction(ctx, header.Name, databaseFile.Name())
 			if _, err := io.Copy(databaseFile, tarReader); err != nil {
 				return fmt.Errorf("cannot copy into a database file: %w", err)
 			}

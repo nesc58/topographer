@@ -29,6 +29,7 @@ type maxmindLookupResult struct {
 type maxmindBase struct {
 	dbReader     *maxminddb.Reader
 	dbReaderLock sync.RWMutex
+	progress     providerUpdateProgress
 }
 
 func (m *maxmindBase) IsOpened() bool {
@@ -50,23 +51,35 @@ func (m *maxmindBase) Open(path string) error {
 	m.dbReaderLock.Lock()
 	defer m.dbReaderLock.Unlock()
 
-	reader, err := maxminddb.Open(filepath.Join(path, maxmindBaseFileName))
+	dbPath := filepath.Join(path, maxmindBaseFileName)
+	m.progress.log("database_initializing", map[string]string{"path": dbPath})
+
+	reader, err := maxminddb.Open(dbPath)
 	if err != nil {
+		m.progress.log("database_initialization_failed", map[string]string{"path": dbPath, "error": err.Error()})
 		return fmt.Errorf("cannot initialize a reader of maxminddb: %w", err)
 	}
 
 	if m.dbReader != nil {
+		m.progress.log("database_close_started", map[string]string{"replacement_path": dbPath})
 		if err := m.dbReader.Close(); err != nil {
+			m.progress.log("database_close_failed", map[string]string{"replacement_path": dbPath, "error": err.Error()})
 			return errors.Join(
 				fmt.Errorf("cannot close the current maxminddb reader: %w", err),
 				reader.Close(),
 			)
 		}
+		m.progress.log("database_close_complete", map[string]string{"replacement_path": dbPath})
 	}
 
 	m.dbReader = reader
+	m.progress.log("database_exchanged", map[string]string{"path": dbPath})
 
 	return nil
+}
+
+func (m *maxmindBase) SetUpdateProgressLogger(provider string, logger topolib.UpdateProgressLogger) {
+	m.progress = providerUpdateProgress{provider: provider, logger: logger}
 }
 
 func (m *maxmindBase) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {

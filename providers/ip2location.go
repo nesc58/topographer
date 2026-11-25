@@ -33,6 +33,7 @@ type ip2locationProvider struct {
 	dbMutex       sync.RWMutex
 	updateEvery   time.Duration
 	httpClient    topolib.HTTPClient
+	progress      providerUpdateProgress
 }
 
 func (i *ip2locationProvider) Name() string {
@@ -73,8 +74,12 @@ func (i *ip2locationProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Pr
 }
 
 func (i *ip2locationProvider) Open(rootDir string) error {
-	db, err := ip2location.OpenDB(filepath.Join(rootDir, ip2locationFileName))
+	path := filepath.Join(rootDir, ip2locationFileName)
+	i.progress.log("database_initializing", map[string]string{"path": path})
+
+	db, err := ip2location.OpenDB(path)
 	if err != nil {
+		i.progress.log("database_initialization_failed", map[string]string{"path": path, "error": err.Error()})
 		return fmt.Errorf("cannot open a new database: %w", err)
 	}
 
@@ -82,12 +87,19 @@ func (i *ip2locationProvider) Open(rootDir string) error {
 	defer i.dbMutex.Unlock()
 
 	if i.db != nil {
+		i.progress.log("database_close_started", map[string]string{"replacement_path": path})
 		i.db.Close()
+		i.progress.log("database_close_complete", map[string]string{"replacement_path": path})
 	}
 
 	i.db = db
+	i.progress.log("database_exchanged", map[string]string{"path": path})
 
 	return nil
+}
+
+func (i *ip2locationProvider) SetUpdateProgressLogger(provider string, logger topolib.UpdateProgressLogger) {
+	i.progress = providerUpdateProgress{provider: provider, logger: logger}
 }
 
 func (i *ip2locationProvider) Shutdown() {
@@ -101,7 +113,9 @@ func (i *ip2locationProvider) Shutdown() {
 }
 
 func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) (retErr error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.buildURL(), nil)
+	downloadURL := i.buildURL()
+	logDownloadSource(ctx, downloadURL, "database archive")
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 
 	resp, err := i.httpClient.Do(req)
 	if err != nil {
@@ -163,6 +177,7 @@ func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) (ret
 			return fmt.Errorf("cannot create a target file: %w", err)
 		}
 
+		logExtraction(ctx, zipFile.Name, filepath.Join(rootDir, ip2locationFileName))
 		_, copyErr := io.Copy(target, dbFile)
 		closeErr := errors.Join(dbFile.Close(), target.Close())
 		if err := errors.Join(copyErr, closeErr); err != nil {

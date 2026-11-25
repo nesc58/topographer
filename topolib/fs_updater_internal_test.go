@@ -23,6 +23,15 @@ type FsUpdaterTestSuite struct {
 	baseDir      string
 }
 
+type updateProgressTestLogger struct {
+	*LoggerMock
+	steps []string
+}
+
+func (l *updateProgressTestLogger) UpdateProgress(_ string, step string, _ map[string]string) {
+	l.steps = append(l.steps, step)
+}
+
 func (suite *FsUpdaterTestSuite) SetupTest() {
 	baseDir, err := os.MkdirTemp("", "fs_updater_test_suite_")
 	suite.baseDir = baseDir
@@ -123,6 +132,31 @@ func (suite *FsUpdaterTestSuite) TestOk() {
 	suite.Equal(
 		"target_2a58c90eb7ef89d2aaddcfbe3b46ef2bea493915b54c2e4906a03e698be49dc3",
 		infos[0].Name())
+}
+
+func (suite *FsUpdaterTestSuite) TestUpdateProgressEvents() {
+	logger := &updateProgressTestLogger{LoggerMock: suite.loggerMock}
+	suite.u.logger = logger
+	suite.providerMock.On("Download", mock.Anything, mock.Anything).
+		Return(nil).
+		Run(func(args mock.Arguments) {
+			suite.NoError(os.WriteFile(filepath.Join(args.String(1), "database"), []byte("data"), 0600))
+		})
+	suite.providerMock.On("Open", mock.Anything).Return(nil)
+
+	suite.NoError(suite.u.doUpdate())
+
+	suite.Equal([]string{
+		"download_started",
+		"download_complete",
+		"promotion_started",
+		"promotion_complete",
+		"database_open_started",
+		"database_open_complete",
+		"database_switched",
+		"cleanup_started",
+		"cleanup_complete",
+	}, logger.steps)
 }
 
 func TestFsUpdater(t *testing.T) {

@@ -59,7 +59,8 @@ func mainFunc() error {
 		return fmt.Errorf("cannot initialise a list of providers: %w", err)
 	}
 
-	topo, err := topolib.NewTopographer(providers, newLogger(), conf.GetWorkerPoolSize())
+	appLogger := newLogger()
+	topo, err := topolib.NewTopographer(providers, appLogger, conf.GetWorkerPoolSize())
 	if err != nil {
 		return fmt.Errorf("cannot initialize topographer: %w", err)
 	}
@@ -91,6 +92,8 @@ func mainFunc() error {
 	if err != nil {
 		return fmt.Errorf("cannot start listener: %w", err)
 	}
+
+	appLogger.ServerStarted(listener.Addr().String())
 
 	if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("http server failed: %w", err)

@@ -31,6 +31,7 @@ type sypexProvider struct {
 	baseDirectory string
 	updateEvery   time.Duration
 	httpClient    topolib.HTTPClient
+	progress      providerUpdateProgress
 }
 
 func (s *sypexProvider) Name() string {
@@ -99,14 +100,21 @@ func (sx *sypexProvider) extractCity(info map[string]interface{}) string {
 }
 
 func (s *sypexProvider) Open(rootDir string) error {
-	db := sypex.New(filepath.Join(rootDir, sypexFileName))
+	path := filepath.Join(rootDir, sypexFileName)
+	s.progress.log("database_initializing", map[string]string{"path": path})
+	db := sypex.New(path)
 
 	s.dbMutex.Lock()
 	defer s.dbMutex.Unlock()
 
 	s.db = &db
+	s.progress.log("database_exchanged", map[string]string{"path": path})
 
 	return nil
+}
+
+func (s *sypexProvider) SetUpdateProgressLogger(provider string, logger topolib.UpdateProgressLogger) {
+	s.progress = providerUpdateProgress{provider: provider, logger: logger}
 }
 
 func (s *sypexProvider) Shutdown() {
@@ -117,6 +125,7 @@ func (s *sypexProvider) Shutdown() {
 }
 
 func (s *sypexProvider) Download(ctx context.Context, rootDir string) (retErr error) {
+	logDownloadSource(ctx, sypexDBURL, "database archive")
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, sypexDBURL, nil)
 
 	fileResp, err := s.httpClient.Do(req)
@@ -160,6 +169,7 @@ func (s *sypexProvider) Download(ctx context.Context, rootDir string) (retErr er
 				return fmt.Errorf("cannot create a target filename: %w", err)
 			}
 
+			logExtraction(ctx, zfile.Name, outFile.Name())
 			_, copyErr := io.Copy(outFile, opened)
 			closeErr := errors.Join(opened.Close(), outFile.Close())
 			if err := errors.Join(copyErr, closeErr); err != nil {

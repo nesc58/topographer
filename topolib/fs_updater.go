@@ -18,6 +18,10 @@ type fsUpdater struct {
 	stats     *UsageStats
 }
 
+type updateProgressLoggerSetter interface {
+	SetUpdateProgressLogger(string, UpdateProgressLogger)
+}
+
 func (f *fsUpdater) Start() error {
 	targetDir, targetTime, err := f.fs.GetTargetDir()
 	if err != nil {
@@ -116,16 +120,29 @@ func (f *fsUpdater) doUpdate() (retErr error) {
 		}
 	}()
 
-	if err := f.Download(f.ctx, tmpDir); err != nil {
-		return fmt.Errorf("cannot download databases: %w", err)
+	f.logProgress("download_started", map[string]string{"target_directory": tmpDir})
+	downloadCtx := f.ctx
+	if progressLogger, ok := f.logger.(UpdateProgressLogger); ok {
+		downloadCtx = WithUpdateProgressLogger(downloadCtx, f.Name(), progressLogger)
 	}
 
+	if err := f.Download(downloadCtx, tmpDir); err != nil {
+		return fmt.Errorf("cannot download databases: %w", err)
+	}
+	f.logProgress("download_complete", map[string]string{"target_directory": tmpDir})
+
+	f.logProgress("promotion_started", map[string]string{"source_directory": tmpDir})
 	newTargetDir, needToReopen, err := f.fs.Promote(tmpDir)
 	if err != nil {
 		return fmt.Errorf("cannot promote tmp dir: %w", err)
 	}
+	f.logProgress("promotion_complete", map[string]string{
+		"target_directory": newTargetDir,
+		"new_target":       fmt.Sprintf("%t", needToReopen),
+	})
 
 	if needToReopen || !f.IsOpened() {
+		f.logProgress("database_open_started", map[string]string{"directory": newTargetDir})
 		if err := f.Open(newTargetDir); err != nil {
 			if cleanupErr := os.RemoveAll(newTargetDir); cleanupErr != nil {
 				err = errors.Join(err, fmt.Errorf("cannot remove new target directory %s: %w", newTargetDir, cleanupErr))
@@ -133,15 +150,27 @@ func (f *fsUpdater) doUpdate() (retErr error) {
 
 			return fmt.Errorf("cannot open a new target dir: %w", err)
 		}
+		f.logProgress("database_open_complete", map[string]string{"directory": newTargetDir})
+		f.logProgress("database_switched", map[string]string{"directory": newTargetDir})
+	} else {
+		f.logProgress("database_unchanged", map[string]string{"directory": newTargetDir})
 	}
 
+	f.logProgress("cleanup_started", map[string]string{"active_directory": newTargetDir})
 	if err := f.fs.Cleanup(newTargetDir); err != nil {
 		return fmt.Errorf("cannot clean old target directories: %w", err)
 	}
+	f.logProgress("cleanup_complete", map[string]string{"active_directory": newTargetDir})
 
 	f.stats.notifyUpdated(time.Now())
 
 	return nil
+}
+
+func (f *fsUpdater) logProgress(step string, details map[string]string) {
+	if logger, ok := f.logger.(UpdateProgressLogger); ok {
+		logger.UpdateProgress(f.Name(), step, details)
+	}
 }
 
 func newFsUpdater(provider OfflineProvider, logger Logger, stats *UsageStats) (OfflineProvider, error) {
@@ -154,6 +183,12 @@ func newFsUpdater(provider OfflineProvider, logger Logger, stats *UsageStats) (O
 		logger:          logger,
 		fs:              fsDir{Dir: provider.BaseDirectory()},
 		stats:           stats,
+	}
+
+	if progressLogger, ok := logger.(UpdateProgressLogger); ok {
+		if setter, ok := provider.(updateProgressLoggerSetter); ok {
+			setter.SetUpdateProgressLogger(provider.Name(), progressLogger)
+		}
 	}
 
 	if err := updater.Start(); err != nil {

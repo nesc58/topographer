@@ -59,8 +59,9 @@ func (d *dbipLiteProvider) Download(ctx context.Context, rootDir string) error {
 }
 
 func (d *dbipLiteProvider) getFileData(ctx context.Context) (downloadURL, checksum string, retErr error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://db-ip.com/db/download/ip-to-city-lite", nil)
+	const pageURL = "https://db-ip.com/db/download/ip-to-city-lite"
+	logDownloadSource(ctx, pageURL, "download page")
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, nil)
 
 	htmlPageResp, err := d.httpClient.Do(req)
 	if err != nil {
@@ -100,6 +101,7 @@ func (d *dbipLiteProvider) getFileData(ctx context.Context) (downloadURL, checks
 }
 
 func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url, sha1sum string) (retErr error) {
+	logDownloadSource(ctx, url, "database archive")
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 
 	fileResp, err := d.httpClient.Do(req)
@@ -124,6 +126,7 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url
 		retErr = errors.Join(retErr, db.Close())
 	}()
 
+	logExtraction(ctx, url, db.Name())
 	checksum, err := hashedCopyResponse(sha1.New, db, fileReader)
 	if err != nil {
 		return fmt.Errorf("cannot save a file on filesystem: %w", err)
