@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,7 +34,7 @@ type fsDir struct {
 }
 
 func (f fsDir) TempDir() (string, error) {
-	return ioutil.TempDir(f.Dir, FsTempDirPrefix)
+	return os.MkdirTemp(f.Dir, FsTempDirPrefix)
 }
 
 func (f fsDir) GetTargetDir() (string, time.Time, error) {
@@ -142,7 +141,7 @@ func (f fsDir) makeChecksum(dir string) (string, error) {
 }
 
 func (f fsDir) readDir() (map[string]os.FileInfo, error) {
-	infos, err := ioutil.ReadDir(f.Dir)
+	infos, err := os.ReadDir(f.Dir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read dir %s: %w", f.Dir, err)
 	}
@@ -150,7 +149,10 @@ func (f fsDir) readDir() (map[string]os.FileInfo, error) {
 	rv := map[string]os.FileInfo{}
 
 	for _, v := range infos {
-		rv[filepath.Join(f.Dir, v.Name())] = v
+		info, err := v.Info()
+		if err != nil {
+			rv[filepath.Join(f.Dir, v.Name())] = info
+		}
 	}
 
 	return rv, nil

@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
 	"github.com/leaanthony/clir"
 )
 
@@ -47,6 +47,7 @@ func mainFunc() error {
 	if err != nil {
 		return fmt.Errorf("cannot read config: %w", err)
 	}
+	fmt.Errorf("config: %w", conf)
 
 	rootCtx, cancel := makeRootContext()
 	defer cancel()

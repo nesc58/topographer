@@ -5,14 +5,14 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
 )
 
 type ip2cProvider struct {
@@ -45,7 +45,7 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 		return result, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	bodyBytes, err := ioutil.ReadAll(bufio.NewReader(resp.Body))
+	bodyBytes, err := io.ReadAll(bufio.NewReader(resp.Body))
 	if err != nil {
 		return result, fmt.Errorf("cannot read response body: %w", err)
 	}
@@ -81,9 +81,9 @@ func (i ip2cProvider) buildURL(ip net.IP) string {
 
 // NewIP2C returns a new instance which works with ip2c.org
 //
-//   Identifier: ip2c
-//   Provider type: online
-//   Website: https://about.ip2c.org
+//	Identifier: ip2c
+//	Provider type: online
+//	Website: https://about.ip2c.org
 //
 // ip2c is not really well-known but quite old and reliable webservice
 // which provides you with IP geolocation data. Seems using Software77

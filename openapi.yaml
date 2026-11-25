@@ -9,10 +9,10 @@ info:
   contact:
     name: Sergey Arkhipov
     email: nineseconds@yandex.ru
-    url: https://github.com/9seconds/topographer
+    url: https://github.com/nesc58/topographer
   license:
     name: MIT
-    url: https://github.com/9seconds/topographer/blob/master/LICENSE
+    url: https://github.com/nesc58/topographer/blob/master/LICENSE
 
 paths:
   /:

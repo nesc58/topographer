@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/9seconds/topographer/providers"
+	"github.com/nesc58/topographer/providers"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/suite"
 )

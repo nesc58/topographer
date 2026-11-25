@@ -8,7 +8,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -19,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
 )
 
 var (
@@ -54,6 +53,10 @@ func (s *software77Provider) UpdateEvery() time.Duration {
 
 func (s *software77Provider) BaseDirectory() string {
 	return s.baseDirectory
+}
+
+func (s *software77Provider) IsOpened() bool {
+	return s.db != nil
 }
 
 func (s *software77Provider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
@@ -266,7 +269,7 @@ func (s *software77Provider) downloadCsvChecksum(ctx context.Context, md5Param s
 
 	defer flushResponse(resp.Body)
 
-	content, err := ioutil.ReadAll(resp.Body)
+	content, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("cannot read from response body: %w", err)
 	}
@@ -310,9 +313,9 @@ func (s *software77Provider) buildURL(param string) string {
 // NewSoftware77 returns a new instance which works with
 // databases from software77.
 //
-//   Identifier: software77
-//   Provider type: offline
-//   Website: https://software77.com
+//	Identifier: software77
+//	Provider type: offline
+//	Website: https://software77.com
 //
 // One of the most oldest databases available. Has no cities,
 // only countries.

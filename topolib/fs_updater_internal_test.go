@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,7 +24,7 @@ type FsUpdaterTestSuite struct {
 }
 
 func (suite *FsUpdaterTestSuite) SetupTest() {
-	baseDir, err := ioutil.TempDir("", "fs_updater_test_suite_")
+	baseDir, err := os.MkdirTemp("", "fs_updater_test_suite_")
 	suite.baseDir = baseDir
 
 	suite.NoError(err)
@@ -61,15 +60,15 @@ func (suite *FsUpdaterTestSuite) TearDownTest() {
 }
 
 func (suite *FsUpdaterTestSuite) TestInitialCleaning() {
-	targetDir, err := ioutil.TempDir(suite.baseDir, FsTargetDirPrefix)
+	targetDir, err := os.MkdirTemp(suite.baseDir, FsTargetDirPrefix)
 
 	suite.NoError(err)
 
-	_, err = ioutil.TempFile(suite.baseDir, "")
+	_, err = os.CreateTemp(suite.baseDir, "")
 
 	suite.NoError(err)
 
-	_, err = ioutil.TempDir(suite.baseDir, "")
+	_, err = os.MkdirTemp(suite.baseDir, "")
 
 	suite.NoError(err)
 
@@ -82,14 +81,14 @@ func (suite *FsUpdaterTestSuite) TestInitialCleaning() {
 
 	time.Sleep(200 * time.Millisecond)
 
-	infos, err := ioutil.ReadDir(suite.baseDir)
+	infos, err := os.ReadDir(suite.baseDir)
 
 	suite.NoError(err)
 	suite.Len(infos, 0)
 }
 
 func (suite *FsUpdaterTestSuite) TestOk() {
-	targetDir, err := ioutil.TempDir(suite.baseDir, FsTargetDirPrefix)
+	targetDir, err := os.MkdirTemp(suite.baseDir, FsTargetDirPrefix)
 
 	suite.NoError(err)
 
@@ -99,11 +98,11 @@ func (suite *FsUpdaterTestSuite) TestOk() {
 		tmpDir := args.String(1)
 
 		suite.NoError(
-			ioutil.WriteFile(filepath.Join(tmpDir, "filename"),
+			os.WriteFile(filepath.Join(tmpDir, "filename"),
 				[]byte("Hello"),
 				0644))
 		suite.NoError(os.MkdirAll(filepath.Join(tmpDir, "path", "to"), 0777))
-		suite.NoError(ioutil.WriteFile(filepath.Join(tmpDir, "path", "to", "file"),
+		suite.NoError(os.WriteFile(filepath.Join(tmpDir, "path", "to", "file"),
 			[]byte("OK"),
 			0644))
 	})
@@ -114,7 +113,7 @@ func (suite *FsUpdaterTestSuite) TestOk() {
 
 	time.Sleep(time.Second + 200*time.Millisecond)
 
-	infos, err := ioutil.ReadDir(suite.baseDir)
+	infos, err := os.ReadDir(suite.baseDir)
 
 	suite.NoError(err)
 	suite.Len(infos, 1)

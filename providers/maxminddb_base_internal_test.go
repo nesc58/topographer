@@ -3,7 +3,6 @@ package providers
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -20,7 +19,7 @@ type MaxmindDBBaseTestSuite struct {
 }
 
 func (suite *MaxmindDBBaseTestSuite) SetupTest() {
-	dir, err := ioutil.TempDir("", "test_")
+	dir, err := os.MkdirTemp("", "test_")
 	if err != nil {
 		panic(err)
 	}

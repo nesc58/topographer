@@ -7,7 +7,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -15,7 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/9seconds/topographer/providers"
+	"github.com/nesc58/topographer/providers"
+
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/suite"
 )
@@ -216,7 +216,7 @@ func (suite *MaxmindLiteTestSuite) TestOk() {
 
 	suite.NoError(suite.prov.Download(ctx, suite.tmpDir))
 
-	data, err := ioutil.ReadFile(filepath.Join(suite.tmpDir, "database.mmdb"))
+	data, err := os.ReadFile(filepath.Join(suite.tmpDir, "database.mmdb"))
 
 	suite.NoError(err)
 	suite.Equal([]byte("hello"), data)

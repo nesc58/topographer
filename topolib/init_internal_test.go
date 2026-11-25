@@ -42,6 +42,10 @@ func (m *OfflineProviderMock) Open(path string) error {
 	return m.Called(path).Error(0)
 }
 
+func (m *OfflineProviderMock) IsOpened() bool {
+	return m.Called().Bool(0)
+}
+
 func (m *OfflineProviderMock) Download(ctx context.Context, path string) error {
 	return m.Called(ctx, path).Error(0)
 }

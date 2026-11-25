@@ -120,7 +120,7 @@ func (f *fsUpdater) doUpdate() error {
 		return fmt.Errorf("cannot promote tmp dir: %w", err)
 	}
 
-	if needToReopen {
+	if needToReopen || !f.IsOpened() {
 		if err := f.Open(newTargetDir); err != nil {
 			os.RemoveAll(newTargetDir)
 

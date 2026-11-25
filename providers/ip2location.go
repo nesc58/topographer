@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -15,7 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
+
 	"github.com/ip2location/ip2location-go"
 )
 
@@ -44,6 +44,10 @@ func (i *ip2locationProvider) UpdateEvery() time.Duration {
 
 func (i *ip2locationProvider) BaseDirectory() string {
 	return i.baseDirectory
+}
+
+func (i *ip2locationProvider) IsOpened() bool {
+	return i.db != nil
 }
 
 func (i *ip2locationProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
@@ -105,7 +109,7 @@ func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) erro
 
 	defer flushResponse(resp.Body)
 
-	tempFile, err := ioutil.TempFile(rootDir, "archive-zip-")
+	tempFile, err := os.CreateTemp(rootDir, "archive-zip-")
 	if err != nil {
 		return fmt.Errorf("cannot create a tempfile: %w", err)
 	}
@@ -147,6 +151,7 @@ func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) erro
 		if err != nil {
 			return fmt.Errorf("cannot create a target file: %w", err)
 		}
+		defer target.Close()
 
 		if _, err := io.Copy(target, dbFile); err != nil {
 			return fmt.Errorf("cannot copy to target file: %w", err)
@@ -177,9 +182,9 @@ func (i *ip2locationProvider) buildURL() string {
 // NewIP2Location returns a new instance which works with databases
 // from lite.ip2location.com
 //
-//   Identifier: ip2location_lite
-//   Provider type: offline
-//   Website: https://lite.ip2location.com
+//	Identifier: ip2location_lite
+//	Provider type: offline
+//	Website: https://lite.ip2location.com
 //
 // ip2location seems quite strange and somehow 'unstable' provider but
 // quite popular. It is present mostly because of that fact: a lot of

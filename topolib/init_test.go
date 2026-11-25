@@ -5,7 +5,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
+
 	"github.com/stretchr/testify/mock"
 )
 
@@ -41,6 +42,10 @@ func (m *OfflineProviderMock) BaseDirectory() string {
 
 func (m *OfflineProviderMock) Open(path string) error {
 	return m.Called(path).Error(0)
+}
+
+func (m *OfflineProviderMock) IsOpened() bool {
+	return m.Called().Bool(0)
 }
 
 func (m *OfflineProviderMock) Download(ctx context.Context, path string) error {

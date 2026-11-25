@@ -7,7 +7,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
 	"github.com/EvilSuperstars/go-cidrman"
 	"github.com/kentik/patricia"
 	"github.com/kentik/patricia/uint8_tree"
@@ -32,9 +32,9 @@ func (s *software77DB) Lookup(addr net.IP) (topolib.CountryCode, error) {
 	v4Addr := addr.To4()
 
 	if v4Addr != nil {
-		ok, value, err = s.v4Tree.FindDeepestTag(patricia.NewIPv4AddressFromBytes(v4Addr, 32))
+		ok, value = s.v4Tree.FindDeepestTag(patricia.NewIPv4AddressFromBytes(v4Addr, 32))
 	} else {
-		ok, value, err = s.v6Tree.FindDeepestTag(patricia.NewIPv6Address(addr.To16(), 128))
+		ok, value = s.v6Tree.FindDeepestTag(patricia.NewIPv6Address(addr.To16(), 128))
 	}
 
 	switch {
@@ -101,19 +101,19 @@ func (s *software77DB) add(ipnet *net.IPNet, countryCode topolib.CountryCode) er
 	addrBytes := ipnet.IP.To4()
 
 	if addrBytes != nil {
-		_, _, err := s.v4Tree.Add(patricia.NewIPv4AddressFromBytes(addrBytes, uint(addrLength)),
+		_, _ = s.v4Tree.Add(patricia.NewIPv4AddressFromBytes(addrBytes, uint(addrLength)),
 			uint8(countryCode),
 			nil)
 
-		return err
+		return nil
 	} else {
 		addrBytes = ipnet.IP.To16()
 
-		_, _, err := s.v6Tree.Add(patricia.NewIPv6Address(addrBytes, uint(addrLength)),
+		_, _ = s.v6Tree.Add(patricia.NewIPv6Address(addrBytes, uint(addrLength)),
 			uint8(countryCode),
 			nil)
 
-		return err
+		return nil
 	}
 }
 

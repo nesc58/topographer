@@ -6,7 +6,7 @@
 ###############################################################################
 # BUILD STAGE
 
-FROM golang:1.16-alpine AS build-env
+FROM golang:1.24.6-alpine3.22 AS build-env
 
 ENV CGO_ENABLED=0
 

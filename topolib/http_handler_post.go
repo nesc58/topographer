@@ -2,7 +2,7 @@ package topolib
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -63,7 +63,7 @@ func (h httpHandler) handlePost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	bodyBytes, err := ioutil.ReadAll(req.Body)
+	bodyBytes, err := io.ReadAll(req.Body)
 
 	req.Body.Close()
 
@@ -106,18 +106,23 @@ func (h httpHandler) handlePost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	for i := range resolved {
-		if !resolved[i].OK() {
-			h.sendError(w, nil, "Cannot resolve IP address yet", http.StatusServiceUnavailable)
+	okresults := []ResolveResult{}
 
-			return
+	for i := range resolved {
+		if resolved[i].OK() {
+			okresults = append(okresults, resolved[i])
 		}
+	}
+
+	if len(okresults) == 0 {
+		h.sendError(w, nil, "Cannot resolve IP address yet", http.StatusServiceUnavailable)
+		return
 	}
 
 	response := struct {
 		Results []ResolveResult `json:"results"`
 	}{
-		Results: resolved,
+		Results: okresults,
 	}
 
 	h.encodeJSON(w, response)

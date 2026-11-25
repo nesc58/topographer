@@ -98,12 +98,12 @@
             // Settings for DB-IP provider. We use lite databases there.
             // This provider has no specific settings.
             "name": "dbip_lite",
-        },
-        {
-            // ip2c.org provider. Online one, does not require any
-            // specific settings.
-            "name": "ip2c"
-        },
+        }
+        #{
+        #    // ip2c.org provider. Online one, does not require any
+        #    // specific settings.
+        #    "name": "ip2c"
+        #},
         # {
         #     // IP2Location provider. We use lite databases there but to
         #     // access them, auth token is required.
@@ -120,15 +120,15 @@
         #         "db_code": "DB3LITEBINIPV6"
         #     }
         # },
-        {
-            // ipinfo provider
-            "name": "ipinfo",
-            "specific_parameters": {
-                // you can use your token here. pass nothing to use
-                // anonymous free-tier.
-                "auth_token": ""
-            }
-        },
+        #{
+        #    // ipinfo provider
+        #    "name": "ipinfo",
+        #    "specific_parameters": {
+        #        // you can use your token here. pass nothing to use
+        #        // anonymous free-tier.
+        #        "auth_token": ""
+        #    }
+        #},
         # {
         #     // ipstack.com provider.
         #     "name": "ipstack",
@@ -145,9 +145,13 @@
         #         "license_key": ""
         #     }
         # },
-        {
-            // good old software77. No specific parameters are required.
-            "name": "software77"
-        }
+        #{
+        #    // good old software77. No specific parameters are required.
+        #    "name": "software77"
+        #},
+        #{
+        #    // good old sypex. No specific parameters are required.
+        #    "name": "sypex"
+        #}
     ]
 }

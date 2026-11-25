@@ -21,4 +21,7 @@ const (
 
 	// Identifier for software77.
 	NameSoftware77 = "software77"
+
+	// Identifier for sypex.
+	NameSypex = "sypex"
 )

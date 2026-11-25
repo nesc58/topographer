@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
+
 	"github.com/oschwald/maxminddb-golang"
 )
 
@@ -27,6 +28,10 @@ type maxmindLookupResult struct {
 type maxmindBase struct {
 	dbReader     *maxminddb.Reader
 	dbReaderLock sync.RWMutex
+}
+
+func (m *maxmindBase) IsOpened() bool {
+	return m.dbReader != nil
 }
 
 func (m *maxmindBase) Shutdown() {

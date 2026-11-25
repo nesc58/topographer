@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
 	"github.com/mccutchen/go-httpbin/httpbin"
 	"github.com/stretchr/testify/suite"
 )

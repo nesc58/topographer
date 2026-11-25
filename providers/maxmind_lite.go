@@ -8,7 +8,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
 )
 
 var (
@@ -83,7 +82,7 @@ func (m *maxmindLiteProvider) downloadChecksum(ctx context.Context) (string, err
 
 	defer flushResponse(resp.Body)
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("cannot read body of the response: %w", err)
 	}
@@ -105,6 +104,7 @@ func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir strin
 	if err != nil {
 		return "", fmt.Errorf("cannot create an archive file: %w", err)
 	}
+	defer tarFile.Close()
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", m.buildURL("tar.gz"), nil)
 
@@ -151,6 +151,7 @@ func (m *maxmindLiteProvider) extractArchive(rootDir string) error {
 	if err != nil {
 		return fmt.Errorf("cannot create a file for a database: %w", err)
 	}
+	defer databaseFile.Close()
 
 	defer os.Remove(filepath.Join(rootDir, maxmindLiteArchiveName))
 
@@ -201,9 +202,9 @@ func (m *maxmindLiteProvider) buildURL(suffix string) string {
 // NewMaxmindLite returns a new instance which works with lite
 // databases from MaxMind.
 //
-//   Identifier: maxmind_lite
-//   Provider type: offline
-//   Website: https://maxmind.com
+//	Identifier: maxmind_lite
+//	Provider type: offline
+//	Website: https://maxmind.com
 //
 // Probably a main choice if we speak on IP geolocation
 // databases. The biggest player in this field.

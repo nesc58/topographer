@@ -2,6 +2,7 @@ package topolib
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 
 	"github.com/pariz/gountries"
@@ -47,6 +48,21 @@ func (c CountryCode) Known() bool {
 
 // Details returns a details for the country taken from gountries.
 func (c CountryCode) Details() gountries.Country {
+	if c.String() == "XK" {
+		kosovoCountry := `
+		  "common": "Kosovo",
+      "official": "Republic of Kosovo",
+      "Native": {
+        "eng": {
+          "common": "Kosovo",
+          "official": "Republic of Kosovo"
+        }
+      }`
+
+		var newCountry = gountries.Country{Codes: gountries.Codes{Alpha2: "XK", Alpha3: "XKK"}}
+		json.Unmarshal([]byte(kosovoCountry), &newCountry.Name)
+		return newCountry
+	}
 	return countryCodeQuery.Countries[c.String()]
 }
 
@@ -62,9 +78,9 @@ func (c CountryCode) Details() gountries.Country {
 func NormalizeAlpha2Code(alpha2 string) string {
 	alpha2 = strings.ToUpper(alpha2)
 
-    if len(alpha2) != 2 {
-        return ""
-    }
+	if len(alpha2) != 2 {
+		return ""
+	}
 
 	// please read comments in downloaded CSV files of software77, this
 	// also applicable to ip2c.
@@ -107,4 +123,10 @@ func init() {
 		countryCodeMapCC2String = append(countryCodeMapCC2String, k)
 		countryCodeMapString2CC[k] = CountryCode(len(countryCodeMapCC2String) - 1)
 	}
+	var k = NormalizeAlpha2Code("XK")
+	if _, ok := countryCodeMapString2CC[k]; k == "" || ok {
+		return
+	}
+	countryCodeMapCC2String = append(countryCodeMapCC2String, k)
+	countryCodeMapString2CC[k] = CountryCode(len(countryCodeMapCC2String) - 1)
 }

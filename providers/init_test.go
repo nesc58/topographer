@@ -1,13 +1,13 @@
 package providers_test
 
 import (
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
+
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/suite"
 )
@@ -19,7 +19,7 @@ type TmpDirTestSuite struct {
 }
 
 func (suite *TmpDirTestSuite) SetupTest() {
-	dir, err := ioutil.TempDir("", "test_")
+	dir, err := os.MkdirTemp("", "test_")
 	if err != nil {
 		panic(err)
 	}

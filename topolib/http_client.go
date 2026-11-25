@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -37,7 +36,7 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 
 		if err != nil {
 			if resp != nil {
-				io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
+				io.Copy(io.Discard, resp.Body) // nolint: errcheck
 				resp.Body.Close()
 			}
 
@@ -45,7 +44,7 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 		}
 
 		if resp.StatusCode >= http.StatusBadRequest {
-			io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
+			io.Copy(io.Discard, resp.Body) // nolint: errcheck
 			resp.Body.Close()
 
 			return nil, fmt.Errorf("netloc has responded with %s", resp.Status)

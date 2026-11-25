@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -179,7 +178,7 @@ func (c configProvider) GetSpecificParameters() map[string]string {
 }
 
 func parseConfig(path string) (*config, error) {
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read file: %w", err)
 	}

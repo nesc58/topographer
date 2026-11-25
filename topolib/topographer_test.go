@@ -3,14 +3,14 @@ package topolib_test
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -29,7 +29,7 @@ func (suite *TopographerTestSuite) SetupTest() {
 	suite.logMock = &LoggerMock{}
 	suite.providerMocks = []*ProviderMock{{}, {}}
 	suite.offlineProviderMocks = []*OfflineProviderMock{{}}
-	suite.tmpDir, _ = ioutil.TempDir("", "topo_test_")
+	suite.tmpDir, _ = os.MkdirTemp("", "topo_test_")
 
 	suite.logMock.On("UpdateInfo", mock.Anything, mock.Anything).Maybe()
 	suite.logMock.On("LookupError", mock.Anything, mock.Anything, mock.Anything).Maybe()

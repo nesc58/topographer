@@ -5,11 +5,10 @@ import (
 	"encoding/hex"
 	"hash"
 	"io"
-	"io/ioutil"
 )
 
 func flushResponse(resp io.ReadCloser) {
-	io.Copy(ioutil.Discard, resp) // nolint: errcheck
+	io.Copy(io.Discard, resp) // nolint: errcheck
 	resp.Close()
 }
 

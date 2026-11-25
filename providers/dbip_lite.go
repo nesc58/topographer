@@ -14,7 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/topolib"
+
 	"github.com/antchfx/htmlquery"
 )
 
@@ -115,6 +116,7 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url
 	if err != nil {
 		return fmt.Errorf("cannot open a target file: %w", err)
 	}
+	defer db.Close()
 
 	checksum, err := hashedCopyResponse(sha1.New, db, fileReader)
 	if err != nil {
@@ -130,9 +132,9 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url
 
 // NewDBIPLite returns a new instance which works with db-ip.com
 //
-//   Identifier: dbip_lite
-//   Provider type: offline
-//   Website: https://db-ip.com
+//	Identifier: dbip_lite
+//	Provider type: offline
+//	Website: https://db-ip.com
 //
 // DB-IP is quite a decent provider which has a results quality quite
 // similar to MaxMind.

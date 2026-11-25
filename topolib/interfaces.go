@@ -65,6 +65,9 @@ type OfflineProvider interface {
 	// validation like checksum match etc. If download returns no error,
 	// it means that database is working and should be used.
 	Download(context.Context, string) error
+
+	// Returns if database is already opened
+	IsOpened() bool
 }
 
 // Logger is a logger interface used by Topographer.

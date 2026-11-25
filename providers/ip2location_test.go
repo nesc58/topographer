@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -12,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/9seconds/topographer/providers"
+	"github.com/nesc58/topographer/providers"
+
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/suite"
 )
@@ -64,9 +64,9 @@ func (suite *MockedIP2LocationTestSuite) TestBaseDirectory() {
 }
 
 func (suite *MockedIP2LocationTestSuite) TestDownloadCancelledContext() {
-    ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
-    cancel()
+	cancel()
 
 	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
 }
@@ -100,7 +100,7 @@ func (suite *MockedIP2LocationTestSuite) TestDownloadNoBin() {
 
 	fp, _ := zipWriter.Create("README.txt")
 
-    fp.Write([]byte{1, 2, 3}) // nolint: errcheck
+	fp.Write([]byte{1, 2, 3}) // nolint: errcheck
 
 	zipWriter.Close()
 
@@ -119,11 +119,11 @@ func (suite *MockedIP2LocationTestSuite) TestDownloadOk() {
 
 	fp, _ := zipWriter.Create("README.txt")
 
-    fp.Write([]byte{1, 2, 3}) // nolint: errcheck
+	fp.Write([]byte{1, 2, 3}) // nolint: errcheck
 
 	fp, _ = zipWriter.Create("db.bin")
 
-    fp.Write([]byte{4, 5, 6}) // nolint: errcheck
+	fp.Write([]byte{4, 5, 6}) // nolint: errcheck
 
 	zipWriter.Close()
 
@@ -133,34 +133,34 @@ func (suite *MockedIP2LocationTestSuite) TestDownloadOk() {
 
 	suite.NoError(suite.prov.Download(ctx, suite.tmpDir))
 
-	content, err := ioutil.ReadFile(filepath.Join(suite.tmpDir, "database.bin"))
+	content, err := os.ReadFile(filepath.Join(suite.tmpDir, "database.bin"))
 
 	suite.NoError(err)
 	suite.Equal([]byte{4, 5, 6}, content)
 }
 
 func (suite *MockedIP2LocationTestSuite) TestOpenNothing() {
-    suite.Error(suite.prov.Open(suite.tmpDir))
+	suite.Error(suite.prov.Open(suite.tmpDir))
 }
 
 func (suite *MockedIP2LocationTestSuite) TestReopen() {
-    suite.NoError(suite.prov.Open(suite.BaseDirectory()))
-    suite.NoError(suite.prov.Open(suite.BaseDirectory()))
+	suite.NoError(suite.prov.Open(suite.BaseDirectory()))
+	suite.NoError(suite.prov.Open(suite.BaseDirectory()))
 
-    ctx := context.Background()
-    res, err := suite.prov.Lookup(ctx, net.ParseIP("80.80.80.80"))
+	ctx := context.Background()
+	res, err := suite.prov.Lookup(ctx, net.ParseIP("80.80.80.80"))
 
-    suite.NoError(err)
-    suite.Equal("Amsterdam", res.City)
-    suite.Equal("NL", res.CountryCode.String())
+	suite.NoError(err)
+	suite.Equal("Amsterdam", res.City)
+	suite.Equal("NL", res.CountryCode.String())
 
-    suite.Error(suite.prov.Open(suite.tmpDir))
+	suite.Error(suite.prov.Open(suite.tmpDir))
 
-    res, err = suite.prov.Lookup(ctx, net.ParseIP("80.80.80.80"))
+	res, err = suite.prov.Lookup(ctx, net.ParseIP("80.80.80.80"))
 
-    suite.NoError(err)
-    suite.Equal("Amsterdam", res.City)
-    suite.Equal("NL", res.CountryCode.String())
+	suite.NoError(err)
+	suite.Equal("Amsterdam", res.City)
+	suite.Equal("NL", res.CountryCode.String())
 }
 
 type IntegrationIP2LocationTestSuite struct {

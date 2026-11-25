@@ -11,8 +11,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/9seconds/topographer/providers"
-	"github.com/9seconds/topographer/topolib"
+	"github.com/nesc58/topographer/providers"
+	"github.com/nesc58/topographer/topolib"
 )
 
 func makeRootContext() (context.Context, context.CancelFunc) {
@@ -96,6 +96,13 @@ func makeProviders(conf *config) ([]topolib.Provider, error) {
 			}
 
 			rv = append(rv, providers.NewSoftware77(httpClient, v.GetUpdateEvery(), baseDir))
+		case providers.NameSypex:
+			baseDir, err := ensureDir(conf, v)
+			if err != nil {
+				return nil, fmt.Errorf("cannot create base directory for sypex provider: %w", err)
+			}
+
+			rv = append(rv, providers.NewSypex(httpClient, v.GetUpdateEvery(), baseDir))
 		default:
 			return nil, fmt.Errorf("unsupported provider name: %s", v.GetName())
 		}
