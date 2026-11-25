@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/mccutchen/go-httpbin/httpbin"
-	"github.com/nesc58/topographer/topolib"
+	"github.com/9seconds/topographer/topolib"
 	"github.com/stretchr/testify/suite"
 )
 

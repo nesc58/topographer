@@ -1,4 +1,4 @@
-module github.com/nesc58/topographer
+module github.com/9seconds/topographer
 
 go 1.27.0
 

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/leaanthony/clir"
-	"github.com/nesc58/topographer/topolib"
+	"github.com/9seconds/topographer/topolib"
 )
 
 var version = "dev"

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/nesc58/topographer/topolib"
+	"github.com/9seconds/topographer/topolib"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/suite"

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/nesc58/topographer/topolib"
+	"github.com/9seconds/topographer/topolib"
 
 	"github.com/oschwald/maxminddb-golang"
 )

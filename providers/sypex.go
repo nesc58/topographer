@@ -17,7 +17,7 @@ import (
 
 	sypex "github.com/night-codes/go-sypexgeo"
 
-	"github.com/nesc58/topographer/topolib"
+	"github.com/9seconds/topographer/topolib"
 )
 
 const (

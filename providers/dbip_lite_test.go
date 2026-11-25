@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/nesc58/topographer/providers"
+	"github.com/9seconds/topographer/providers"
 	"github.com/stretchr/testify/suite"
 )
 

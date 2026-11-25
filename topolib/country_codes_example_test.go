@@ -3,7 +3,7 @@ package topolib_test
 import (
 	"fmt"
 
-	"github.com/nesc58/topographer/topolib"
+	"github.com/9seconds/topographer/topolib"
 )
 
 func ExampleNormalizeAlpha2Code() {

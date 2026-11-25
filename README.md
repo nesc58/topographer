@@ -59,7 +59,7 @@ Installing
 Install the latest published version with:
 
 ```shell
-$ go install github.com/nesc58/topographer@latest
+$ go install github.com/9seconds/topographer@latest
 ```
 
 (but if you want, you can find prebuilt binaries on [releases page](https://github.com/9seconds/topographer/releases))

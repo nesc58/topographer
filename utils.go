@@ -11,8 +11,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/nesc58/topographer/providers"
-	"github.com/nesc58/topographer/topolib"
+	"github.com/9seconds/topographer/providers"
+	"github.com/9seconds/topographer/topolib"
 )
 
 func makeRootContext() (context.Context, context.CancelFunc) {
