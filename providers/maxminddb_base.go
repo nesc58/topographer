@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -39,7 +40,8 @@ func (m *maxmindBase) Shutdown() {
 	defer m.dbReaderLock.Unlock()
 
 	if m.dbReader != nil {
-		m.dbReader.Close()
+		// Shutdown cannot return close errors through the OfflineProvider interface.
+		_ = m.dbReader.Close()
 		m.dbReader = nil
 	}
 }
@@ -54,7 +56,12 @@ func (m *maxmindBase) Open(path string) error {
 	}
 
 	if m.dbReader != nil {
-		m.dbReader.Close()
+		if err := m.dbReader.Close(); err != nil {
+			return errors.Join(
+				fmt.Errorf("cannot close the current maxminddb reader: %w", err),
+				reader.Close(),
+			)
+		}
 	}
 
 	m.dbReader = reader

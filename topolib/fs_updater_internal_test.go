@@ -46,6 +46,7 @@ func (suite *FsUpdaterTestSuite) SetupTest() {
 	suite.providerMock.On("Name").Return("providerMock").Maybe()
 	suite.providerMock.On("BaseDirectory").Return(baseDir).Maybe()
 	suite.providerMock.On("UpdateEvery").Return(time.Second).Maybe()
+	suite.providerMock.On("IsOpened").Return(false).Maybe()
 	suite.loggerMock.On("UpdateError", mock.Anything, mock.Anything).Maybe()
 	suite.loggerMock.On("UpdateInfo", mock.Anything, mock.Anything).Maybe()
 }
@@ -56,7 +57,7 @@ func (suite *FsUpdaterTestSuite) TearDownTest() {
 	suite.providerMock.AssertExpectations(suite.T())
 	suite.loggerMock.AssertExpectations(suite.T())
 
-	os.RemoveAll(suite.baseDir)
+	suite.NoError(os.RemoveAll(suite.baseDir))
 }
 
 func (suite *FsUpdaterTestSuite) TestInitialCleaning() {
@@ -92,7 +93,9 @@ func (suite *FsUpdaterTestSuite) TestOk() {
 
 	suite.NoError(err)
 
-	defer os.RemoveAll(targetDir)
+	defer func() {
+		suite.NoError(os.RemoveAll(targetDir))
+	}()
 
 	suite.providerMock.On("Download", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 		tmpDir := args.String(1)

@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/nesc58/topographer/topolib"
 	"github.com/leaanthony/clir"
+	"github.com/nesc58/topographer/topolib"
 )
 
 var version = "dev"
@@ -92,9 +92,9 @@ func mainFunc() error {
 		return fmt.Errorf("cannot start listener: %w", err)
 	}
 
-	defer listener.Close()
-
-	srv.Serve(listener) // nolint: errcheck
+	if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("http server failed: %w", err)
+	}
 
 	<-closeChan
 

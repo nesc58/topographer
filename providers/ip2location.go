@@ -3,6 +3,7 @@ package providers
 import (
 	"archive/zip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -99,7 +100,7 @@ func (i *ip2locationProvider) Shutdown() {
 	}
 }
 
-func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) error {
+func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) (retErr error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.buildURL(), nil)
 
 	resp, err := i.httpClient.Do(req)
@@ -107,7 +108,9 @@ func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) erro
 		return fmt.Errorf("cannot request a file download: %w", err)
 	}
 
-	defer flushResponse(resp.Body)
+	defer func() {
+		retErr = errors.Join(retErr, flushResponse(resp.Body))
+	}()
 
 	tempFile, err := os.CreateTemp(rootDir, "archive-zip-")
 	if err != nil {
@@ -115,8 +118,12 @@ func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) erro
 	}
 
 	defer func() {
-		tempFile.Close()
-		os.Remove(tempFile.Name())
+		if err := tempFile.Close(); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("cannot close temporary archive: %w", err))
+		}
+		if err := os.Remove(tempFile.Name()); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("cannot remove temporary archive: %w", err))
+		}
 	}()
 
 	if err := copyResponse(tempFile, resp.Body); err != nil {
@@ -149,11 +156,16 @@ func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) erro
 
 		target, err := os.Create(filepath.Join(rootDir, ip2locationFileName))
 		if err != nil {
+			if closeErr := dbFile.Close(); closeErr != nil {
+				err = errors.Join(err, closeErr)
+			}
+
 			return fmt.Errorf("cannot create a target file: %w", err)
 		}
-		defer target.Close()
 
-		if _, err := io.Copy(target, dbFile); err != nil {
+		_, copyErr := io.Copy(target, dbFile)
+		closeErr := errors.Join(dbFile.Close(), target.Close())
+		if err := errors.Join(copyErr, closeErr); err != nil {
 			return fmt.Errorf("cannot copy to target file: %w", err)
 		}
 

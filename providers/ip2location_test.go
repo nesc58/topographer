@@ -102,7 +102,7 @@ func (suite *MockedIP2LocationTestSuite) TestDownloadNoBin() {
 
 	fp.Write([]byte{1, 2, 3}) // nolint: errcheck
 
-	zipWriter.Close()
+	suite.NoError(zipWriter.Close())
 
 	httpmock.RegisterResponder("GET",
 		"https://www.ip2location.com/download/",
@@ -125,7 +125,7 @@ func (suite *MockedIP2LocationTestSuite) TestDownloadOk() {
 
 	fp.Write([]byte{4, 5, 6}) // nolint: errcheck
 
-	zipWriter.Close()
+	suite.NoError(zipWriter.Close())
 
 	httpmock.RegisterResponder("GET",
 		"https://www.ip2location.com/download/",

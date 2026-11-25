@@ -1,14 +1,15 @@
 package topolib_test
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/nesc58/topographer/topolib"
 	"github.com/mccutchen/go-httpbin/httpbin"
+	"github.com/nesc58/topographer/topolib"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -50,8 +51,11 @@ func (suite *HTTPClientTestSuite) TestRateLimiter() {
 			req, _ := http.NewRequest("GET", suite.httpbinEndpoint.URL+"/get", nil)
 			resp, err := suite.c.Do(req)
 
-			suite.NoError(err)
+			if !suite.NoError(err) {
+				return
+			}
 			suite.Equal(http.StatusOK, resp.StatusCode)
+			suite.NoError(resp.Body.Close())
 		}()
 	}
 
@@ -73,6 +77,26 @@ func (suite *HTTPClientTestSuite) TestCannotDial() {
 	_, err := suite.c.Do(req)
 
 	suite.Error(err)
+}
+
+func (suite *HTTPClientTestSuite) TestResponseBodyRemainsReadable() {
+	client := suite.httpbinEndpoint.Client()
+	client.Timeout = time.Second
+	suite.c = topolib.NewHTTPClient(client, "test", 100*time.Millisecond, 1, 5, time.Minute, time.Minute)
+
+	req, err := http.NewRequest(http.MethodGet, suite.httpbinEndpoint.URL+"/get", nil)
+	suite.NoError(err)
+
+	resp, err := suite.c.Do(req)
+	suite.NoError(err)
+	suite.NotNil(resp)
+	defer func() {
+		suite.NoError(resp.Body.Close())
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	suite.NoError(err)
+	suite.NotEmpty(body)
 }
 
 func TestHTTPClient(t *testing.T) {

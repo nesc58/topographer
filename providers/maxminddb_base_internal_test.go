@@ -31,7 +31,7 @@ func (suite *MaxmindDBBaseTestSuite) SetupTest() {
 func (suite *MaxmindDBBaseTestSuite) TearDownTest() {
 	suite.m.Shutdown()
 	os.Chmod(suite.tmpDir, 0777) // nolint: errcheck
-	os.RemoveAll(suite.tmpDir)
+	suite.NoError(os.RemoveAll(suite.tmpDir))
 }
 
 func (suite *MaxmindDBBaseTestSuite) GetTestdataPath() string {

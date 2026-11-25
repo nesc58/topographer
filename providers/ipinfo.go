@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -26,8 +27,7 @@ func (i ipinfoProvider) Name() string {
 	return NameIPInfo
 }
 
-func (i ipinfoProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
-	result := topolib.ProviderLookupResult{}
+func (i ipinfoProvider) Lookup(ctx context.Context, ip net.IP) (result topolib.ProviderLookupResult, retErr error) {
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet,
 		i.buildURL(ip), nil)
@@ -43,7 +43,9 @@ func (i ipinfoProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provider
 		return result, fmt.Errorf("cannot send a request: %w", err)
 	}
 
-	defer flushResponse(resp.Body)
+	defer func() {
+		retErr = errors.Join(retErr, flushResponse(resp.Body))
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return result, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
@@ -74,9 +76,9 @@ func (i ipinfoProvider) buildURL(ip net.IP) string {
 
 // NewIPInfo returns a new instance which works with ipinfo.io
 //
-//   Identifier: ipinfo
-//   Provider type: online
-//   Website: https://ipinfo.io
+//	Identifier: ipinfo
+//	Provider type: online
+//	Website: https://ipinfo.io
 //
 // ipinfo.io seems one of the most popular choices for REST API
 // services.

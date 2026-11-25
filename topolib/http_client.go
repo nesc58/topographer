@@ -2,6 +2,7 @@ package topolib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,46 +19,70 @@ type httpClient struct {
 }
 
 func (h httpClient) Do(req *http.Request) (*http.Response, error) {
+	var cancel context.CancelFunc
+
 	if h.client.Timeout > 0 {
-		ctx, _ := context.WithTimeout(req.Context(), h.client.Timeout) // nolint: govet
+		ctx, cancelRequest := context.WithTimeout(req.Context(), h.client.Timeout)
+		cancel = cancelRequest
 		req = req.WithContext(ctx)
 	}
 
-	ctx := req.Context()
-
 	req.Header.Set("User-Agent", h.userAgent)
 
-	resp, err := h.circuitBreaker.Do(ctx, func(ctx context.Context) (*http.Response, error) {
-		resp, err := h.client.Do(req.WithContext(ctx))
-
+	resp, err := h.circuitBreaker.Do(req.Context(), func(ctx context.Context) (*http.Response, error) {
 		if err := h.rateLimiter.Wait(ctx); err != nil {
-			return nil, ErrCircuitBreakerIgnore
+			return nil, fmt.Errorf("%w: %w", ErrCircuitBreakerIgnore, err)
 		}
 
+		resp, err := h.client.Do(req.WithContext(ctx))
 		if err != nil {
 			if resp != nil {
-				io.Copy(io.Discard, resp.Body) // nolint: errcheck
-				resp.Body.Close()
+				err = errors.Join(err, closeResponseBody(resp.Body))
 			}
 
 			return nil, err
 		}
 
 		if resp.StatusCode >= http.StatusBadRequest {
-			io.Copy(io.Discard, resp.Body) // nolint: errcheck
-			resp.Body.Close()
-
-			return nil, fmt.Errorf("netloc has responded with %s", resp.Status)
+			return nil, errors.Join(
+				fmt.Errorf("netloc has responded with %s", resp.Status),
+				closeResponseBody(resp.Body),
+			)
 		}
 
-		return resp, err
+		return resp, nil
 	})
 
-	if resp == nil {
-		return nil, err
+	if cancel != nil {
+		if resp == nil || err != nil {
+			cancel()
+		} else {
+			resp.Body = cancelOnCloseReadCloser{
+				ReadCloser: resp.Body,
+				cancel:     cancel,
+			}
+		}
 	}
 
 	return resp, err
+}
+
+type cancelOnCloseReadCloser struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+}
+
+func (r cancelOnCloseReadCloser) Close() error {
+	err := r.ReadCloser.Close()
+	r.cancel()
+
+	return err
+}
+
+func closeResponseBody(body io.ReadCloser) error {
+	_, copyErr := io.Copy(io.Discard, body)
+
+	return errors.Join(copyErr, body.Close())
 }
 
 // NewHTTPClient prepares a new HTTP client, wraps it with rate limiter,

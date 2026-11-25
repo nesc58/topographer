@@ -72,7 +72,7 @@ func (suite *TopographerTestSuite) TearDownTest() {
 
 	time.Sleep(100 * time.Millisecond)
 
-	os.RemoveAll(suite.tmpDir)
+	suite.NoError(os.RemoveAll(suite.tmpDir))
 }
 
 func (suite *TopographerTestSuite) TestResolveShutdown() {

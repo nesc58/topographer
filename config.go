@@ -208,13 +208,13 @@ func parseConfig(path string) (*config, error) {
 
 	for _, v := range conf.Providers {
 		if _, ok := seenProviderNames[v.GetName()]; ok {
-			return nil, fmt.Errorf("Name %s is duplicated", v.GetName())
+			return nil, fmt.Errorf("name %s is duplicated", v.GetName())
 		}
 
 		seenProviderNames[v.GetName()] = struct{}{}
 
 		if _, ok := seenDirectories[v.GetDirectory()]; ok {
-			return nil, fmt.Errorf("Directory %s is duplicated", v.GetDirectory())
+			return nil, fmt.Errorf("directory %s is duplicated", v.GetDirectory())
 		}
 
 		seenDirectories[v.GetDirectory()] = struct{}{}

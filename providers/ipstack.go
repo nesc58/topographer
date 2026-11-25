@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -32,8 +33,7 @@ func (i ipstackProvider) Name() string {
 	return NameIPStack
 }
 
-func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
-	result := topolib.ProviderLookupResult{}
+func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (result topolib.ProviderLookupResult, retErr error) {
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.buildURL(ip), nil)
 
@@ -44,7 +44,9 @@ func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provide
 		return result, fmt.Errorf("cannot send a request: %w", err)
 	}
 
-	defer flushResponse(resp.Body)
+	defer func() {
+		retErr = errors.Join(retErr, flushResponse(resp.Body))
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return result, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
@@ -93,9 +95,9 @@ func (i ipstackProvider) buildURL(ip net.IP) string {
 
 // NewIPStack returns a new instance which works with ipstack.com
 //
-//   Identifier: ipstack
-//   Provider type: online
-//   Website: https://ipstack.com
+//	Identifier: ipstack
+//	Provider type: online
+//	Website: https://ipstack.com
 //
 // A brother/sister of ipinfo. Has a lot of big logos on its
 // frontend page, sells https for money.

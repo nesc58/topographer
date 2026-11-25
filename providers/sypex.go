@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -115,7 +116,7 @@ func (s *sypexProvider) Shutdown() {
 	s.db = nil
 }
 
-func (s *sypexProvider) Download(ctx context.Context, rootDir string) error {
+func (s *sypexProvider) Download(ctx context.Context, rootDir string) (retErr error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, sypexDBURL, nil)
 
 	fileResp, err := s.httpClient.Do(req)
@@ -123,7 +124,9 @@ func (s *sypexProvider) Download(ctx context.Context, rootDir string) error {
 		return fmt.Errorf("cannot download a file: %w", err)
 	}
 
-	defer flushResponse(fileResp.Body)
+	defer func() {
+		retErr = errors.Join(retErr, flushResponse(fileResp.Body))
+	}()
 
 	buff := bytes.NewBuffer([]byte{})
 	size, err := io.Copy(buff, fileResp.Body)
@@ -134,7 +137,7 @@ func (s *sypexProvider) Download(ctx context.Context, rootDir string) error {
 
 	zipReader, err := zip.NewReader(reader, size)
 	if err != nil {
-		return fmt.Errorf("Cannot open zip archive: %w", err)
+		return fmt.Errorf("cannot open zip archive: %w", err)
 	}
 
 	for _, zfile := range zipReader.File {
@@ -146,23 +149,28 @@ func (s *sypexProvider) Download(ctx context.Context, rootDir string) error {
 		if strings.ToLower(extension) == ".dat" {
 			opened, err := zfile.Open()
 			if err != nil {
-				return fmt.Errorf("Cannot extract file from archive: %w", err)
+				return fmt.Errorf("cannot extract file from archive: %w", err)
 			}
 			outFile, err := os.Create(filepath.Join(rootDir, sypexFileName))
 			if err != nil {
-				return fmt.Errorf("cannot create a target filename: %w", err)
-			}
-			defer outFile.Close()
-			_, err = io.Copy(outFile, opened)
+				if closeErr := opened.Close(); closeErr != nil {
+					err = errors.Join(err, closeErr)
+				}
 
-			if err != nil {
 				return fmt.Errorf("cannot create a target filename: %w", err)
 			}
+
+			_, copyErr := io.Copy(outFile, opened)
+			closeErr := errors.Join(opened.Close(), outFile.Close())
+			if err := errors.Join(copyErr, closeErr); err != nil {
+				return fmt.Errorf("cannot write a target filename: %w", err)
+			}
+
 			return nil
 		}
 	}
 
-	return fmt.Errorf("Cannot find required file")
+	return fmt.Errorf("cannot find required file")
 }
 
 // NewSypex returns a new instance which works with

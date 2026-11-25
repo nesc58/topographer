@@ -3,6 +3,7 @@ package topolib
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -124,10 +125,10 @@ func (f fsDir) makeChecksum(dir string) (string, error) {
 			return fmt.Errorf("cannot open a file %s: %w", path, err)
 		}
 
-		defer fp.Close()
-
-		if _, err := io.Copy(hasher, fp); err != nil {
-			return fmt.Errorf("cannot copy a file contents of %s: %w", path, err)
+		_, copyErr := io.Copy(hasher, fp)
+		closeErr := fp.Close()
+		if err := errors.Join(copyErr, closeErr); err != nil {
+			return fmt.Errorf("cannot read file contents of %s: %w", path, err)
 		}
 
 		return nil
@@ -151,8 +152,10 @@ func (f fsDir) readDir() (map[string]os.FileInfo, error) {
 	for _, v := range infos {
 		info, err := v.Info()
 		if err != nil {
-			rv[filepath.Join(f.Dir, v.Name())] = info
+			return nil, fmt.Errorf("cannot get info for %s: %w", v.Name(), err)
 		}
+
+		rv[filepath.Join(f.Dir, v.Name())] = info
 	}
 
 	return rv, nil

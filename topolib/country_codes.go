@@ -60,7 +60,9 @@ func (c CountryCode) Details() gountries.Country {
       }`
 
 		var newCountry = gountries.Country{Codes: gountries.Codes{Alpha2: "XK", Alpha3: "XKK"}}
-		json.Unmarshal([]byte(kosovoCountry), &newCountry.Name)
+		if err := json.Unmarshal([]byte(kosovoCountry), &newCountry.Name); err != nil {
+			panic(err)
+		}
 		return newCountry
 	}
 	return countryCodeQuery.Countries[c.String()]

@@ -2,6 +2,7 @@ package topolib
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -65,7 +66,7 @@ func (h httpHandler) handlePost(w http.ResponseWriter, req *http.Request) {
 
 	bodyBytes, err := io.ReadAll(req.Body)
 
-	req.Body.Close()
+	err = errors.Join(err, req.Body.Close())
 
 	if err != nil {
 		h.sendError(w, err, "Cannot read request body", http.StatusBadRequest)

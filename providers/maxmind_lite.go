@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -56,7 +57,7 @@ func (m *maxmindLiteProvider) Download(ctx context.Context, rootDir string) erro
 
 	actualChecksum, err := m.downloadArchive(ctx, rootDir)
 	if err != nil {
-		return fmt.Errorf("cannot download an archive")
+		return fmt.Errorf("cannot download an archive: %w", err)
 	}
 
 	if !strings.EqualFold(expectedChecksum, actualChecksum) {
@@ -72,7 +73,7 @@ func (m *maxmindLiteProvider) Download(ctx context.Context, rootDir string) erro
 	return nil
 }
 
-func (m *maxmindLiteProvider) downloadChecksum(ctx context.Context) (string, error) {
+func (m *maxmindLiteProvider) downloadChecksum(ctx context.Context) (checksum string, retErr error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", m.buildURL("tar.gz.sha256"), nil)
 
 	resp, err := m.httpClient.Do(req)
@@ -80,7 +81,9 @@ func (m *maxmindLiteProvider) downloadChecksum(ctx context.Context) (string, err
 		return "", fmt.Errorf("cannot fetch checksum page: %w", err)
 	}
 
-	defer flushResponse(resp.Body)
+	defer func() {
+		retErr = errors.Join(retErr, flushResponse(resp.Body))
+	}()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -89,22 +92,24 @@ func (m *maxmindLiteProvider) downloadChecksum(ctx context.Context) (string, err
 
 	pos := bytes.IndexAny(data, " \t")
 	if pos == -1 {
-		return "", fmt.Errorf("incorrect response format: %w", err)
+		return "", fmt.Errorf("incorrect response format: checksum is missing")
 	}
 
 	if !maxmindChecksumRegexp.Match(data[:pos]) {
-		return "", fmt.Errorf("incorrect checksum format: %w", err)
+		return "", fmt.Errorf("incorrect checksum format")
 	}
 
 	return string(data[:pos]), nil
 }
 
-func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir string) (string, error) {
+func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir string) (checksum string, retErr error) {
 	tarFile, err := os.Create(filepath.Join(rootDir, maxmindLiteArchiveName))
 	if err != nil {
 		return "", fmt.Errorf("cannot create an archive file: %w", err)
 	}
-	defer tarFile.Close()
+	defer func() {
+		retErr = errors.Join(retErr, tarFile.Close())
+	}()
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", m.buildURL("tar.gz"), nil)
 
@@ -113,52 +118,70 @@ func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir strin
 		return "", fmt.Errorf("cannot download an archive: %w", err)
 	}
 
-	defer flushResponse(resp.Body)
+	defer func() {
+		retErr = errors.Join(retErr, flushResponse(resp.Body))
+	}()
 
 	pipeReadEnd, pipeWriteEnd := io.Pipe()
 
-	defer pipeReadEnd.Close()
-	defer pipeWriteEnd.Close()
+	writeClosed := false
+	defer func() {
+		if !writeClosed {
+			retErr = errors.Join(retErr, pipeWriteEnd.Close())
+		}
+		retErr = errors.Join(retErr, pipeReadEnd.Close())
+	}()
 
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 
 	go func() {
 		_, err := io.Copy(tarFile, pipeReadEnd)
+		if err != nil {
+			pipeReadEnd.CloseWithError(err)
+		}
 		errChan <- err
 	}()
 
-	checksum, err := hashedCopyResponse(sha256.New, pipeWriteEnd, resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("cannot copy file into fs: %w", err)
-	}
-
-	pipeWriteEnd.Close()
-
-	if err := <-errChan; err != nil {
-		return "", fmt.Errorf("cannot write to tar file: %w", err)
+	checksum, err = hashedCopyResponse(sha256.New, pipeWriteEnd, resp.Body)
+	closeErr := pipeWriteEnd.Close()
+	writeClosed = true
+	writeErr := <-errChan
+	if err := errors.Join(err, closeErr, writeErr); err != nil {
+		return "", fmt.Errorf("cannot write archive: %w", err)
 	}
 
 	return checksum, nil
 }
 
-func (m *maxmindLiteProvider) extractArchive(rootDir string) error {
+func (m *maxmindLiteProvider) extractArchive(rootDir string) (retErr error) {
 	archiveFile, err := os.Open(filepath.Join(rootDir, maxmindLiteArchiveName))
 	if err != nil {
 		return fmt.Errorf("cannot open archive: %w", err)
 	}
+	defer func() {
+		if err := os.Remove(filepath.Join(rootDir, maxmindLiteArchiveName)); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("cannot remove downloaded archive: %w", err))
+		}
+	}()
+	defer func() {
+		retErr = errors.Join(retErr, archiveFile.Close())
+	}()
 
 	databaseFile, err := os.Create(filepath.Join(rootDir, maxmindBaseFileName))
 	if err != nil {
 		return fmt.Errorf("cannot create a file for a database: %w", err)
 	}
-	defer databaseFile.Close()
-
-	defer os.Remove(filepath.Join(rootDir, maxmindLiteArchiveName))
+	defer func() {
+		retErr = errors.Join(retErr, databaseFile.Close())
+	}()
 
 	ungzipReader, err := gzip.NewReader(archiveFile)
 	if err != nil {
 		return fmt.Errorf("cannot create a gzip reader: %w", err)
 	}
+	defer func() {
+		retErr = errors.Join(retErr, ungzipReader.Close())
+	}()
 
 	tarReader := tar.NewReader(ungzipReader)
 

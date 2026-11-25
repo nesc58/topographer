@@ -36,7 +36,7 @@ func (suite *CountryCodeTestSuite) TestDetails() {
 	v := topolib.Alpha2ToCountryCode("ru")
 
 	suite.Equal("RU", v.String())
-	suite.Equal("Russia", v.Details().Name.BaseLang.Common)
+	suite.Equal("Russia", v.Details().Name.Common)
 }
 
 func TestCountryCode(t *testing.T) {

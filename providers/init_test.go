@@ -29,7 +29,7 @@ func (suite *TmpDirTestSuite) SetupTest() {
 
 func (suite *TmpDirTestSuite) TearDownTest() {
 	os.Chmod(suite.tmpDir, 0777) // nolint: errcheck
-	os.RemoveAll(suite.tmpDir)
+	suite.NoError(os.RemoveAll(suite.tmpDir))
 }
 
 type ProviderTestSuite struct {
@@ -60,7 +60,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 type OnlineProviderTestSuite struct {
 	ProviderTestSuite
 
-	prov topolib.Provider // nolint: structcheck
+	prov topolib.Provider
 }
 
 type OfflineProviderTestSuite struct {

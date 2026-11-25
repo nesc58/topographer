@@ -20,7 +20,7 @@ func ExampleAlpha2ToCountryCode() {
 	code := topolib.Alpha2ToCountryCode("uk")
 
 	fmt.Println(code.String())
-	fmt.Println(code.Details().Name.BaseLang.Common)
+	fmt.Println(code.Details().Name.Common)
 	// output:
 	// GB
 	// United Kingdom
@@ -30,7 +30,7 @@ func ExampleAlpha3ToCountryCode() {
 	code := topolib.Alpha3ToCountryCode("ita")
 
 	fmt.Println(code.String())
-	fmt.Println(code.Details().Name.BaseLang.Common)
+	fmt.Println(code.Details().Name.Common)
 	// output:
 	// IT
 	// Italy

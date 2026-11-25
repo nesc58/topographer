@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -23,8 +24,7 @@ func (i ip2cProvider) Name() string {
 	return NameIP2C
 }
 
-func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
-	result := topolib.ProviderLookupResult{}
+func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (result topolib.ProviderLookupResult, retErr error) {
 	ip4 := ip.To4()
 
 	if ip4 == nil {
@@ -39,7 +39,9 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 		return result, fmt.Errorf("cannot send a request: %w", err)
 	}
 
-	defer flushResponse(resp.Body)
+	defer func() {
+		retErr = errors.Join(retErr, flushResponse(resp.Body))
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return result, fmt.Errorf("unexpected status code: %d", resp.StatusCode)

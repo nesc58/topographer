@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nesc58/topographer/providers"
 	"github.com/jarcoal/httpmock"
+	"github.com/nesc58/topographer/providers"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -171,7 +171,7 @@ func (suite *MockedDBIPTestSuite) TestDownloadCannotSaveFile() {
 	wr := gzip.NewWriter(fileBuffer)
 
 	wr.Write([]byte{1, 2, 3}) // nolint: errcheck
-	wr.Close()
+	suite.NoError(wr.Close())
 
 	httpmock.RegisterResponder("GET",
 		"https://download.db-ip.com/free/file.mmdb.gz",
@@ -203,7 +203,7 @@ func (suite *MockedDBIPTestSuite) TestDownloadIncorrectChecksum() {
 	wr := gzip.NewWriter(fileBuffer)
 
 	wr.Write([]byte{1, 2, 3}) // nolint: errcheck
-	wr.Close()
+	suite.NoError(wr.Close())
 
 	httpmock.RegisterResponder("GET",
 		"https://download.db-ip.com/free/file.mmdb.gz",
@@ -235,7 +235,7 @@ func (suite *MockedDBIPTestSuite) TestDownloadOk() {
 	wr := gzip.NewWriter(fileBuffer)
 
 	wr.Write([]byte{1, 2, 3}) // nolint: errcheck
-	wr.Close()
+	suite.NoError(wr.Close())
 
 	httpmock.RegisterResponder("GET",
 		"https://download.db-ip.com/free/file.mmdb.gz",

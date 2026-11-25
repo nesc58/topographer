@@ -2,6 +2,7 @@ package topolib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -103,13 +104,17 @@ func (f *fsUpdater) runBgUpdate() {
 	}
 }
 
-func (f *fsUpdater) doUpdate() error {
+func (f *fsUpdater) doUpdate() (retErr error) {
 	tmpDir, err := f.fs.TempDir()
 	if err != nil {
 		return fmt.Errorf("cannot make a temporary dir: %w", err)
 	}
 
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("cannot remove temporary directory %s: %w", tmpDir, err))
+		}
+	}()
 
 	if err := f.Download(f.ctx, tmpDir); err != nil {
 		return fmt.Errorf("cannot download databases: %w", err)
@@ -122,13 +127,18 @@ func (f *fsUpdater) doUpdate() error {
 
 	if needToReopen || !f.IsOpened() {
 		if err := f.Open(newTargetDir); err != nil {
-			os.RemoveAll(newTargetDir)
+			if cleanupErr := os.RemoveAll(newTargetDir); cleanupErr != nil {
+				err = errors.Join(err, fmt.Errorf("cannot remove new target directory %s: %w", newTargetDir, cleanupErr))
+			}
 
 			return fmt.Errorf("cannot open a new target dir: %w", err)
 		}
 	}
 
-	f.fs.Cleanup(newTargetDir) // nolint: errcheck
+	if err := f.fs.Cleanup(newTargetDir); err != nil {
+		return fmt.Errorf("cannot clean old target directories: %w", err)
+	}
+
 	f.stats.notifyUpdated(time.Now())
 
 	return nil

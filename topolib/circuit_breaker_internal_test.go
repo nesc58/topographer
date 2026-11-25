@@ -48,6 +48,24 @@ func (suite *CircuitBreakerTestSuite) AssertResponseOk(resp *http.Response) {
 	suite.Equal(http.StatusCreated, resp.StatusCode)
 }
 
+func (suite *CircuitBreakerTestSuite) assertState(expected uint32) {
+	suite.cb.stateMutexChan <- true
+	defer func() {
+		<-suite.cb.stateMutexChan
+	}()
+
+	suite.EqualValues(expected, suite.cb.state)
+}
+
+func (suite *CircuitBreakerTestSuite) assertFailuresCount(expected uint32) {
+	suite.cb.stateMutexChan <- true
+	defer func() {
+		<-suite.cb.stateMutexChan
+	}()
+
+	suite.EqualValues(expected, suite.cb.failuresCount)
+}
+
 func (suite *CircuitBreakerTestSuite) TearDownTest() {
 	suite.ctxCancel()
 
@@ -121,28 +139,28 @@ func (suite *CircuitBreakerTestSuite) TestSomeFailuresButStillWorks() {
 
 		return !ok
 	}, 500*time.Second, 10*time.Millisecond)
-	suite.EqualValues(0, suite.cb.failuresCount)
-	suite.EqualValues(circuitBreakerStateClosed, suite.cb.state)
+	suite.assertFailuresCount(0)
+	suite.assertState(circuitBreakerStateClosed)
 }
 
 func (suite *CircuitBreakerTestSuite) TestSomeFailuresButStillClosed() {
 	_, err := suite.cb.Do(suite.ctx, suite.CallbackErr)
 
 	suite.Error(err)
-	suite.EqualValues(1, suite.cb.failuresCount)
-	suite.EqualValues(circuitBreakerStateClosed, suite.cb.state)
+	suite.assertFailuresCount(1)
+	suite.assertState(circuitBreakerStateClosed)
 
 	_, err = suite.cb.Do(suite.ctx, suite.CallbackErr)
 
 	suite.Error(err)
-	suite.EqualValues(2, suite.cb.failuresCount)
-	suite.EqualValues(circuitBreakerStateClosed, suite.cb.state)
+	suite.assertFailuresCount(2)
+	suite.assertState(circuitBreakerStateClosed)
 
 	_, err = suite.cb.Do(suite.ctx, suite.CallbackErr)
 
 	suite.Error(err)
-	suite.EqualValues(0, suite.cb.failuresCount)
-	suite.EqualValues(circuitBreakerStateOpened, suite.cb.state)
+	suite.assertFailuresCount(0)
+	suite.assertState(circuitBreakerStateOpened)
 }
 
 func (suite *CircuitBreakerTestSuite) TestClosedFailureReset() {
@@ -151,8 +169,8 @@ func (suite *CircuitBreakerTestSuite) TestClosedFailureReset() {
 
 	time.Sleep(time.Second)
 
-	suite.EqualValues(0, suite.cb.failuresCount)
-	suite.EqualValues(circuitBreakerStateClosed, suite.cb.state)
+	suite.assertFailuresCount(0)
+	suite.assertState(circuitBreakerStateClosed)
 }
 
 func (suite *CircuitBreakerTestSuite) TestOpenedExecute() {
@@ -163,7 +181,7 @@ func (suite *CircuitBreakerTestSuite) TestOpenedExecute() {
 	_, err := suite.cb.Do(suite.ctx, suite.CallbackOk) // nolint: errcheck
 
 	suite.Error(err)
-	suite.EqualValues(circuitBreakerStateOpened, suite.cb.state)
+	suite.assertState(circuitBreakerStateOpened)
 }
 
 func (suite *CircuitBreakerTestSuite) TestOpenedIgnore() {
@@ -175,7 +193,7 @@ func (suite *CircuitBreakerTestSuite) TestOpenedIgnore() {
 	_, err := suite.cb.Do(suite.ctx, suite.CallbackOk) // nolint: errcheck
 
 	suite.NoError(err)
-	suite.EqualValues(circuitBreakerStateClosed, suite.cb.state)
+	suite.assertState(circuitBreakerStateClosed)
 }
 
 func (suite *CircuitBreakerTestSuite) TestHalfOpened() {
@@ -185,7 +203,7 @@ func (suite *CircuitBreakerTestSuite) TestHalfOpened() {
 
 	time.Sleep(700 * time.Millisecond)
 
-	suite.EqualValues(circuitBreakerStateHalfOpened, suite.cb.state)
+	suite.assertState(circuitBreakerStateHalfOpened)
 }
 
 func (suite *CircuitBreakerTestSuite) TestHalfOpenedErr() {
@@ -197,7 +215,7 @@ func (suite *CircuitBreakerTestSuite) TestHalfOpenedErr() {
 
 	suite.cb.Do(suite.ctx, suite.CallbackErr) // nolint: errcheck
 
-	suite.EqualValues(circuitBreakerStateOpened, suite.cb.state)
+	suite.assertState(circuitBreakerStateOpened)
 }
 
 func (suite *CircuitBreakerTestSuite) TestHalfOpenedOk() {
@@ -209,7 +227,7 @@ func (suite *CircuitBreakerTestSuite) TestHalfOpenedOk() {
 
 	suite.cb.Do(suite.ctx, suite.CallbackOk) // nolint: errcheck
 
-	suite.EqualValues(circuitBreakerStateClosed, suite.cb.state)
+	suite.assertState(circuitBreakerStateClosed)
 }
 
 func (suite *CircuitBreakerTestSuite) TestCheckConcurrentExecutionInHalfOpened() {
@@ -231,7 +249,7 @@ func (suite *CircuitBreakerTestSuite) TestCheckConcurrentExecutionInHalfOpened()
 
 	suite.Error(err)
 	time.Sleep(time.Second)
-	suite.EqualValues(circuitBreakerStateClosed, suite.cb.state)
+	suite.assertState(circuitBreakerStateClosed)
 }
 
 func TestCircuitBreaker(t *testing.T) {

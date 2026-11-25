@@ -135,7 +135,7 @@ func (suite *MaxmindLiteTestSuite) TestCannotExtractArchiveNotTar() {
 	hasher := sha256.New()
 
 	w.Write([]byte("hello")) // nolint: errcheck
-	w.Close()
+	suite.NoError(w.Close())
 	hasher.Write(buf.Bytes()) // nolint: errcheck
 
 	hashed := hex.EncodeToString(hasher.Sum(nil))
@@ -167,8 +167,8 @@ func (suite *MaxmindLiteTestSuite) TestCannotExtractArchiveNoFileInTar() {
 		Size:     5,
 	})
 	tarFile.Write([]byte("hello")) // nolint: errcheck
-	tarFile.Close()
-	w.Close()
+	suite.NoError(tarFile.Close())
+	suite.NoError(w.Close())
 	hasher.Write(buf.Bytes()) // nolint: errcheck
 
 	hashed := hex.EncodeToString(hasher.Sum(nil))
@@ -200,8 +200,8 @@ func (suite *MaxmindLiteTestSuite) TestOk() {
 		Size:     5,
 	})
 	tarFile.Write([]byte("hello")) // nolint: errcheck
-	tarFile.Close()
-	w.Close()
+	suite.NoError(tarFile.Close())
+	suite.NoError(w.Close())
 	hasher.Write(buf.Bytes()) // nolint: errcheck
 
 	hashed := hex.EncodeToString(hasher.Sum(nil))

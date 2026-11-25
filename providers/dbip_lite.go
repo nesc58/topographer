@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	dbipLiteErrNothingOnPage   = errors.New("could not find anything on a page")
+	errDBIPLiteNothingOnPage   = errors.New("could not find anything on a page")
 	dbipLiteUrlRegexp          = regexp.MustCompile(`https?:\/\/download\.db-ip\.com\/free\/.*?\.mmdb\.gz`)
 	dbipLiteSha1ChecksumRegexp = regexp.MustCompile(`(?i)[0-9a-f]{40}`)
 )
@@ -58,7 +58,7 @@ func (d *dbipLiteProvider) Download(ctx context.Context, rootDir string) error {
 	return nil
 }
 
-func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, error) {
+func (d *dbipLiteProvider) getFileData(ctx context.Context) (downloadURL, checksum string, retErr error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet,
 		"https://db-ip.com/db/download/ip-to-city-lite", nil)
 
@@ -71,7 +71,9 @@ func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, err
 		return "", "", fmt.Errorf("unexpected http response code: %d", htmlPageResp.StatusCode)
 	}
 
-	defer flushResponse(htmlPageResp.Body)
+	defer func() {
+		retErr = errors.Join(retErr, flushResponse(htmlPageResp.Body))
+	}()
 
 	tree, err := htmlquery.Parse(bufio.NewReader(htmlPageResp.Body))
 	if err != nil {
@@ -94,10 +96,10 @@ func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, err
 		}
 	}
 
-	return "", "", dbipLiteErrNothingOnPage
+	return "", "", errDBIPLiteNothingOnPage
 }
 
-func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url, sha1sum string) error {
+func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url, sha1sum string) (retErr error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 
 	fileResp, err := d.httpClient.Do(req)
@@ -105,7 +107,9 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url
 		return fmt.Errorf("cannot download a file: %w", err)
 	}
 
-	defer flushResponse(fileResp.Body)
+	defer func() {
+		retErr = errors.Join(retErr, flushResponse(fileResp.Body))
+	}()
 
 	fileReader, err := gzip.NewReader(fileResp.Body)
 	if err != nil {
@@ -116,7 +120,9 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url
 	if err != nil {
 		return fmt.Errorf("cannot open a target file: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		retErr = errors.Join(retErr, db.Close())
+	}()
 
 	checksum, err := hashedCopyResponse(sha1.New, db, fileReader)
 	if err != nil {

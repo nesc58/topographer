@@ -3,13 +3,15 @@ package providers
 import (
 	"bufio"
 	"encoding/hex"
+	"errors"
 	"hash"
 	"io"
 )
 
-func flushResponse(resp io.ReadCloser) {
-	io.Copy(io.Discard, resp) // nolint: errcheck
-	resp.Close()
+func flushResponse(resp io.ReadCloser) error {
+	_, copyErr := io.Copy(io.Discard, resp)
+
+	return errors.Join(copyErr, resp.Close())
 }
 
 func copyResponse(dst io.Writer, src io.Reader) error {
