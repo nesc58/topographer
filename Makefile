@@ -4,7 +4,8 @@ IMAGE_NAME := $(APP_NAME)
 
 CC_BINARIES := $(shell bash -c "echo -n $(APP_NAME)-{linux,freebsd,openbsd}-{386,amd64} $(APP_NAME)-linux-{arm,arm64}")
 
-GOLANGCI_LINT_VERSION := v1.37.1
+GOLANGCI_LINT_VERSION := v2.15.0
+GODOC_VERSION := v0.53.0
 
 VERSION_GO         := $(shell go version)
 VERSION_DATE       := $(shell date -Ru)
@@ -20,6 +21,7 @@ GOTOOL := env "GOBIN=$(GOBIN)" "PATH=$(ROOT_DIR)/.bin:$(PATH)"
 all: build
 
 .PHONY: build
+build:
 	@go build -mod=readonly -o "$(APP_NAME)"
 
 .PHONY: static-build
@@ -71,15 +73,14 @@ install-tools: install-tools-lint install-tools-godoc
 
 .PHONY: install-tools-lint
 install-tools-lint:
-	@mkdir -p "$(GOBIN)" || true && \
-		curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh \
-		| bash -s -- -b "$(GOBIN)" "$(GOLANGCI_LINT_VERSION)"
+	@mkdir -p "$(GOBIN)" && \
+		$(GOTOOL) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 .PHONY: install-tools-godoc
 install-tools-godoc:
-	@mkdir -p "$(GOBIN)" || true && \
-		$(GOTOOL) go get -u golang.org/x/tools/cmd/godoc
+	@mkdir -p "$(GOBIN)" && \
+		$(GOTOOL) go install golang.org/x/tools/cmd/godoc@$(GODOC_VERSION)
 
 .PHONY: update-deps
-upgrade-deps:
-	$go get -u && go mod tidy
+update-deps:
+	@go get -u ./... && go mod tidy

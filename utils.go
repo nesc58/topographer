@@ -89,13 +89,6 @@ func makeProviders(conf *config) ([]topolib.Provider, error) {
 			}
 
 			rv = append(rv, prov)
-		case providers.NameSoftware77:
-			baseDir, err := ensureDir(conf, v)
-			if err != nil {
-				return nil, fmt.Errorf("cannot create base directory for sofware77 provider: %w", err)
-			}
-
-			rv = append(rv, providers.NewSoftware77(httpClient, v.GetUpdateEvery(), baseDir))
 		case providers.NameSypex:
 			baseDir, err := ensureDir(conf, v)
 			if err != nil {

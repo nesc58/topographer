@@ -47,8 +47,6 @@ func mainFunc() error {
 	if err != nil {
 		return fmt.Errorf("cannot read config: %w", err)
 	}
-	fmt.Errorf("config: %w", conf)
-
 	rootCtx, cancel := makeRootContext()
 	defer cancel()
 

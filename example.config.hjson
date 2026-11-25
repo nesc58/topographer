@@ -146,10 +146,6 @@
         #     }
         # },
         #{
-        #    // good old software77. No specific parameters are required.
-        #    "name": "software77"
-        #},
-        #{
         #    // good old sypex. No specific parameters are required.
         #    "name": "sypex"
         #}

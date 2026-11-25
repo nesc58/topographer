@@ -19,9 +19,6 @@ const (
 	// Identifier for MaxMind Geo2Lite databases.
 	NameMaxmindLite = "maxmind_lite"
 
-	// Identifier for software77.
-	NameSoftware77 = "software77"
-
 	// Identifier for sypex.
 	NameSypex = "sypex"
 )

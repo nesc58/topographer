@@ -38,17 +38,12 @@ city and returns this tuple as a result.
 Building
 ========
 
-Building is trivial.
-
-1. Install [Golang](https://golang.org/doc/install);
-2. Run `go get github.com/9seconds/topographer`
-
-or if you want to build from sources:
+Install [Go](https://go.dev/doc/install), then build from sources:
 
 ```shell
-$ git clone https://github.com/9seconds/topographer
+$ git clone https://github.com/nesc58/topographer
 $ cd topographer
-$ go build
+$ go build -o topographer .
 ```
 
 or simple build Docker container
@@ -61,10 +56,10 @@ $ docker build -t topographer .
 Installing
 ==========
 
-Installation is simple as
+Install the latest published version with:
 
 ```shell
-$ go get github.com/9seconds/topographer
+$ go install github.com/nesc58/topographer@latest
 ```
 
 (but if you want, you can find prebuilt binaries on [releases page](https://github.com/9seconds/topographer/releases))

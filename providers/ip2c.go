@@ -86,8 +86,8 @@ func (i ip2cProvider) buildURL(ip net.IP) string {
 //	Website: https://about.ip2c.org
 //
 // ip2c is not really well-known but quite old and reliable webservice
-// which provides you with IP geolocation data. Seems using Software77
-// databases. Has no cities, only countries.
+// which provides you with IP geolocation data. Has no cities, only
+// countries.
 func NewIP2C(client topolib.HTTPClient) topolib.Provider {
 	return ip2cProvider{
 		client: client,

@@ -82,8 +82,7 @@ func NormalizeAlpha2Code(alpha2 string) string {
 		return ""
 	}
 
-	// please read comments in downloaded CSV files of software77, this
-	// also applicable to ip2c.
+	// Normalize provider-specific placeholders and country-code aliases.
 	switch alpha2 {
 	case "ZZ", "AP", "EU":
 		return ""

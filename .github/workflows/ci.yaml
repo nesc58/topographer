@@ -23,29 +23,17 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    strategy:
-      matrix:
-        go_version:
-          - ~1.14
-          - ~1.15
-          - ^1.16
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v7
         with:
-          go-version: ${{ matrix.go_version }}
-
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
+          go-version: 1.27.4
+          cache: true
 
       - name: Run tests
         run: go test -coverprofile=./coverage.txt -covermode=atomic -v ./...
@@ -65,14 +53,14 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Run linter
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v9.3.0
         with:
-          version: v1.37.1
+          version: v2.15.0
 
   docker:
     name: Docker
@@ -80,7 +68,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
